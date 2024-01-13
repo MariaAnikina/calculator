@@ -3,21 +3,23 @@ package anikina.maria.service;
 import anikina.maria.exceptions.InvalidInputStringFormatException;
 
 import java.util.Arrays;
-import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class CalculatorService {
-	public final List<Character> supportedCharacters = List.of('0', '1', '2', '3', '4', '5', '6', '7', '8',
-			'9', '.', '+', '-', '*', '/', '(', ')', ' ');
+	private final Validation validation;
+
+	public CalculatorService(Validation validation) {
+		this.validation = validation;
+	}
+
 	public String solve(String expression) {
 		expression = "(" + expression + ")";
 		String answer = null;
 		StringBuilder expressionBuilder = new StringBuilder(expression);
 		StringBuilder exp = transformOriginalExpression(expression);
-		inputDataValidation(exp.toString());
+		validation.inputDataValidation(exp.toString());
 		int numberOfBrackets = 0;
 		while (expressionBuilder.indexOf("(") != -1) {
 			expressionBuilder.replace(expressionBuilder.indexOf("("), expressionBuilder.indexOf("(") + 1, "");
@@ -41,35 +43,6 @@ public class CalculatorService {
 		return answer;
 	}
 
-	public boolean inputDataValidation(String exp) {
-		for (char ch : exp.toCharArray()) {
-			if (!supportedCharacters.contains(ch)) {
-				throw new InvalidInputStringFormatException("Выражение содержит недопустимые символы");
-			}
-		}
-		if (!checkingCorrectnessBrackets(exp)) {
-			throw new InvalidInputStringFormatException("Скобки расставлены неккоректно");
-		}
-		return true;
-	}
-
-	public boolean checkingCorrectnessBrackets(String exp) {
-		List<String> bracketsCharacters = Arrays.stream(exp.split(""))
-				.filter(ch -> ch.equals("(") || ch.equals(")"))
-				.collect(Collectors.toList());
-		Deque<String> stack = new LinkedList<>();
-		for (String bracket : bracketsCharacters) {
-			if (bracket.equals("(")) {
-				stack.push(bracket);
-			} else if (bracket.equals(")")) {
-				if (stack.isEmpty() || !stack.pop().equals("(")) {
-					return false;
-				}
-			}
-		}
-		return stack.isEmpty();
-	}
-
 	public StringBuilder transformOriginalExpression(String exp) {
 		exp = exp.replace(" ", "");
 		StringBuilder expressionNew = new StringBuilder();
@@ -85,7 +58,7 @@ public class CalculatorService {
 			}
 			expressionNew.append(symbol);
 		}
-		return new StringBuilder(expressionNew.toString());
+		return expressionNew;
 	}
 
 	public String countInsideBrackets(String substring) {
@@ -127,7 +100,11 @@ public class CalculatorService {
 				doubleBiFunction = (d1, d2) -> d1 * d2;
 				break;
 			case "/":
-				doubleBiFunction = (d1, d2) -> d1 / d2;
+				if (Double.parseDouble(number2) != 0.0) {
+					doubleBiFunction = (d1, d2) -> d1 / d2;
+				} else {
+					throw new ArithmeticException("Делить на ноль нельзя(");
+				}
 				break;
 			case "+":
 			case "--":
@@ -141,7 +118,11 @@ public class CalculatorService {
 				doubleBiFunction = (d1, d2) -> d1 * d2 * (-1);
 				break;
 			case "/-":
-				doubleBiFunction = (d1, d2) -> d1 / d2 * (-1);
+				if (Double.parseDouble(number2) != 0.0) {
+					doubleBiFunction = (d1, d2) -> d1 / d2 * (-1);
+				} else {
+					throw new ArithmeticException("Делить на ноль нельзя(");
+				}
 				break;
 			default:
 				throw new InvalidInputStringFormatException("Unexpected value: " + operation);
